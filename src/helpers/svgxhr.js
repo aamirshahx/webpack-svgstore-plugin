@@ -40,6 +40,7 @@ var svgXHR = function(options) {
       return;
     }
     var div = document.createElement('div');
+    div.className = 'visuallyhidden';
     div.innerHTML = _ajax.responseText;
     document.body.insertBefore(div, document.body.childNodes[0]);
   };
