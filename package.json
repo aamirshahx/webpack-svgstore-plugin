@@ -1,5 +1,5 @@
 {
-  "name": "webpack-svgstore-plugin",
+  "name": "@cwlib/webpack-svgstore-plugin",
   "version": "4.0.1",
   "description": "Webpack svgstore plugin",
   "main": "src/svgstore.js",
