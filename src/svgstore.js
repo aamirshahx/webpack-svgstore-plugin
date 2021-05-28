@@ -20,6 +20,7 @@ const utils = require('./helpers/utils');
 const ConstDependency = require('webpack/lib/dependencies/ConstDependency');
 const NullFactory = require('webpack/lib/NullFactory');
 const async = require('async');
+const pluginName = 'WebpackSvgStore';
 
 class WebpackSvgStore {
 
@@ -37,9 +38,9 @@ class WebpackSvgStore {
 
   addTask(file, value) {
     this.tasks[file] ? this.tasks[file].push(value) : (() => {
-        this.tasks[file] = [];
-        this.tasks[file].push(value);
-      })();
+      this.tasks[file] = [];
+      this.tasks[file].push(value);
+    })();
   }
 
   createTaskContext(expr, parser) {
@@ -62,7 +63,10 @@ class WebpackSvgStore {
       }
     });
 
-    data.fileName = utils.hash(data.fileName, parser.state.current.buildTimestamp);
+    const files = utils.filesMapSync(path.join(data.context, data.path || ''));
+
+    data.fileContent = utils.createSprite(utils.parseFiles(files, this.options), this.options.template);
+    data.fileName = utils.hash(data.fileName, utils.hashByString(data.fileContent));
     let replacement = expr.id.name + ' = { filename: ' + "__webpack_require__.p +" + '"' + data.fileName + '" }';
     let dep = new ConstDependency(replacement, expr.range);
     dep.loc = expr.loc;
@@ -73,13 +77,14 @@ class WebpackSvgStore {
 
   apply(compiler) {
     // AST parser
-    compiler.plugin('compilation', (compilation, data) => {
-      
+    compiler.hooks.compilation.tap(pluginName, compilation => {
       compilation.dependencyFactories.set(ConstDependency, new NullFactory());
       compilation.dependencyTemplates.set(ConstDependency, new ConstDependency.Template());
-      
-      data.normalModuleFactory.plugin('parser', (parser, options) => {
-        parser.plugin('statement', (expr) => {
+    });
+
+    compiler.hooks.normalModuleFactory.tap(pluginName, factory => {
+      factory.hooks.parser.for('javascript/auto').tap(pluginName, (parser, options) => {
+        parser.hooks.statement.tap(pluginName, expr => {
           if (!expr.declarations || !expr.declarations.length) return;
           const thisExpr = expr.declarations[0];
           if (thisExpr.id.name === "__svg__") {
@@ -87,11 +92,10 @@ class WebpackSvgStore {
           }
         });
       });
-    });
-
+    })
 
     // save file to fs
-    compiler.plugin('emit', (compilation, callback) => {
+    compiler.hooks.emit.tapAsync(pluginName, (compilation, callback) => {
       async.forEach(Object.keys(this.tasks),
         (key, outerCallback) => {
           async.forEach(this.tasks[key],
@@ -115,11 +119,9 @@ class WebpackSvgStore {
               });
             }, outerCallback);
         }, callback);
-    });
+    })
 
-    compiler.plugin('done', () => {
-      this.tasks = {};
-    });
+    compiler.hooks.done.tap(pluginName, () => { this.tasks = {} });
   }
 }
 

@@ -1,6 +1,6 @@
 {
-  "name": "@cwlib/webpack-svgstore-plugin",
-  "version": "4.0.1",
+  "name": "@external/webpack-svgstore-plugin",
+  "version": "5.0.0",
   "description": "Webpack svgstore plugin",
   "main": "src/svgstore.js",
   "scripts": {
@@ -36,7 +36,7 @@
     "istanbul": "0.4.5",
     "mocha": "3.2.0",
     "path": "0.12.7",
-    "webpack": "2.2.1"
+    "webpack": "^5.37.0"
   },
   "repository": {
     "type": "git",
